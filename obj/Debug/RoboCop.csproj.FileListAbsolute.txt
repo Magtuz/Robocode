@@ -1,7 +1,0 @@
-c:\users\admin.admin-пк\documents\visual studio 2010\Projects\RoboCop\RoboCop\obj\Debug\ResolveAssemblyReference.cache
-c:\users\admin.admin-пк\documents\visual studio 2010\Projects\RoboCop\RoboCop\bin\Debug\robocode.dll
-c:\users\admin.admin-пк\documents\visual studio 2010\Projects\RoboCop\RoboCop\bin\Debug\robocode.xml
-C:\Users\Admin.Admin-ПК\documents\visual studio 2010\Projects\RoboCop\RoboCop\bin\Debug\EMK.RoboCop_0.5.dll
-C:\Users\Admin.Admin-ПК\documents\visual studio 2010\Projects\RoboCop\RoboCop\bin\Debug\EMK.RoboCop_0.5.pdb
-C:\Users\Admin.Admin-ПК\documents\visual studio 2010\Projects\RoboCop\RoboCop\obj\Debug\EMK.RoboCop_0.5.dll
-C:\Users\Admin.Admin-ПК\documents\visual studio 2010\Projects\RoboCop\RoboCop\obj\Debug\EMK.RoboCop_0.5.pdb
