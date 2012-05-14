@@ -67,35 +67,8 @@ public Chromosome[] doubleCrossover(  Chromosome chromosome  ){
 		return resultChromosome;
 	}
 	
-	
-	
-	
-	
 
-	static int HEAD_SIZE=10;	//размер головы строки (читать про корректность karva-деревьев)
-	static int MAX_ARN=4; 		//максимальна€ арность базовой функции - 4 (у if)
-	
-
-	static int MAX_COUNT=50;	//если за 50 поколений ничего не вышло, то уж вр€дли выйдет
-	static void init(int[][] best, double[] fitness, int[][][] f, int[][][] f_n) 
-	{
-		//int i, j;
-		best = new int[4][size];
-		f=new int[psize][4][size];
-	}
-	static void build_person(int[][] f) 						//генераци€ особи дл€ начальной попул€ции
-	{
-		int i, j;
-		Random rand = new Random();
-		for(i = 0; i < 4; i++){
-			for(j = 0; j < HEAD_SIZE; j++){
-				f[i][j] = rand.nextInt(24);
-			}
-			for(; j < size; j++){
-				f[i][j] = 8 + rand.nextInt(16);
-			}	
-		}
-	}											
+												
 	static void write_person(int[][] f) 			//запиши особь в файл дл€ последующей интерпретации в танке
 	{
 		int i, j;
@@ -139,49 +112,27 @@ public Chromosome[] doubleCrossover(  Chromosome chromosome  ){
 		out.write("robocode.battle.selectedRobots=sample.Hulk,sample.MyFirstRobot\n");
 	    }
 	    catch (IOException e)    { System.out.println("файл battle.txt не открываетс€\n");  }
-		/*if(POSITIONS){
-			out.write("robocode.battle.initialPositions=(%d,%d,?),(%d,%d,?)\n", x1, y1, x2, y2);
-		}
+		
 		out.close(battle);*/
 	} 
 	
 	
 	static double results_scan() 			//считывает файл с результатми битвы и возвращает значение функции пригодности
 	{
-		
-				int my_score, enemy_score, my_win, win, enemy_win, my_score2, enemy_score2, tmp, tmp2;
-				char* name = (char*)malloc(40);
-
-				if((results = fopen ("results.txt","r")) == NULL){
-					printf("файл results.txt не открываетс€\n");exit(1);
-				}
-				 try
-		         {
-		         BufferedReader in = new BufferedReader(new FileReader("results.txt"));
+		 try
+	       {
+	         BufferedReader in = new BufferedReader(new FileReader("results.txt"));	 
+	         String bbb = in.readLine();
+		     
+		    }
 		 
-		         String bbb = in.readLine();
-		         aaa.close();
-		         }
-		 
-		         catch(FileNotFoundException e)
-		         {
-		             System.out.println("‘айл не найден");
-		         }
-				
-					fclose(results);
-
-					out.write(+my_score +enemy_score);
-					out.write(+my_score2+ enemy_score2);
-
-					my_score += my_score2;
-					enemy_score += enemy_score2;
-				}
-				
-				out.write("total:"+my_score+ enemy_score+(100*(double)my_score/(my_score + enemy_score)));
-
-				*/
-				return 100;//*(double)my_score/(my_score + enemy_score);
-	}												//выдергиваем из файла результатов бо€ значние функции приспособленности
+	      catch(FileNotFoundException e)
+	      {
+	        System.out.println("‘айл не найден");
+	      }
+			
+				return 1;
+	}											
 	static int find_sum_and_max_fitness(double[] fitness, int[][][] f)
 	{
 		int i, j;
@@ -213,18 +164,8 @@ public Chromosome[] doubleCrossover(  Chromosome chromosome  ){
 		}	
 		
 		return index;
-	}			//считаем параметры попул€ции
-	
-	/*
-	селекци€ - составл€ем из поколени€ пары дл€ спаривани€.
-
-	elite - сама€ лучша€ особь, она остаетс€ на своем месте
-	fitness[номер особи] - массив приспособленностей особей
-	f[номер особи][номер выражени€][номер символа] - массив особей
-	f_n - то же самое, только новое поколение
-	*/
-	static void selection(int elite, double[] fitness, int[][][] f, int[][][] f_n) 		//кто круче, тому и места больше
-	{
+	}			
+	static void selection(int elite, double[] fitness, int[][][] f, int[][][] f_n) 		
 		int i, j, k;
 		double rand, tmp;
 		Random random = new Random();
@@ -236,10 +177,7 @@ public Chromosome[] doubleCrossover(  Chromosome chromosome  ){
 
 		for(i = 0; i < psize; i++){
 			if(i != elite){
-				//получаем случайно плавающее число от 0 до 100
 				rand = (random.nextDouble())*100;
-				
-				//и смотрим, в чью из особой попул€ции "попало" это число
 				for(k = 0, tmp = 0; tmp < rand;){
 					tmp += fitness[k++];
 		   
@@ -268,12 +206,7 @@ public Chromosome[] doubleCrossover(  Chromosome chromosome  ){
 	
 	
 	
-	/*
-	кроссовер - скрещивание особей поколени€
-
-	elite - сама€ лучша€ особь, она остаетс€ на своем месте
-	f_n - массив особей поколени€
-	*/
+	
 	static void crossover(int elite, int[][][] f_n) 			//скрещивание
 	{
 		int i, j, k;
