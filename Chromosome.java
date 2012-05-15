@@ -68,7 +68,9 @@ public Chromosome[] doubleCrossover(  Chromosome chromosome  ){
 	}
 	
 
-												
+
+	static int MAX_COUNT=50;	//если за 50 поколений ничего не вышло, то уж врядли выйдет
+										
 	static void write_person(int[][] f) 			//запиши особь в файл для последующей интерпретации в танке
 	{
 		int i, j;
@@ -107,32 +109,33 @@ public Chromosome[] doubleCrossover(  Chromosome chromosome  ){
 		}
 		
 		out.write("robocode.battle.gunCoolingRate=0.1\n");
-		out.write("robocode.battle.rules.inactivityTime=450\n");
-//																			
-		out.write("robocode.battle.selectedRobots=sample.Hulk,sample.MyFirstRobot\n");
+		out.write("robocode.battle.rules.inactivityTime=450\n");																			
+		out.write("robocode.battle.selectedRobots=EMK.Predtor,sample.Wall\n");
 	    }
 	    catch (IOException e)    { System.out.println("файл battle.txt не открывается\n");  }
-		
-		out.close(battle);*/
 	} 
 	
 	
 	static double results_scan() 			//считывает файл с результатми битвы и возвращает значение функции пригодности
 	{
-		 try
-	       {
-	         BufferedReader in = new BufferedReader(new FileReader("results.txt"));	 
-	         String bbb = in.readLine();
-		     
-		    }
+		
+
+		try
+	         {
+		         BufferedReader in = new BufferedReader(new FileReader("results.txt"));
+		         String bbb = in.readLine();
+	        	 aaa.close();
+	         }
 		 
-	      catch(FileNotFoundException e)
-	      {
-	        System.out.println("Файл не найден");
-	      }
-			
+		 catch(FileNotFoundException e)
+		 {
+		 	System.out.println("Файл не найден");
+		 }
+				
+				
 				return 1;
-	}											
+	}												
+
 	static int find_sum_and_max_fitness(double[] fitness, int[][][] f)
 	{
 		int i, j;
@@ -165,7 +168,9 @@ public Chromosome[] doubleCrossover(  Chromosome chromosome  ){
 		
 		return index;
 	}			
-	static void selection(int elite, double[] fitness, int[][][] f, int[][][] f_n) 		
+	
+	static void selection(int elite, double[] fitness, int[][][] f, int[][][] f_n) 		//кто круче, тому и места больше
+	{
 		int i, j, k;
 		double rand, tmp;
 		Random random = new Random();
@@ -177,7 +182,10 @@ public Chromosome[] doubleCrossover(  Chromosome chromosome  ){
 
 		for(i = 0; i < psize; i++){
 			if(i != elite){
+				//получаем случайно плавающее число от 0 до 100
 				rand = (random.nextDouble())*100;
+				
+				//и смотрим, в чью из особой популяции "попало" это число
 				for(k = 0, tmp = 0; tmp < rand;){
 					tmp += fitness[k++];
 		   
@@ -203,7 +211,6 @@ public Chromosome[] doubleCrossover(  Chromosome chromosome  ){
 		}
 		System.out.println("\n");
 	}	
-	
 	
 	
 	
@@ -288,60 +295,23 @@ public Chromosome[] doubleCrossover(  Chromosome chromosome  ){
 				}
 		}
 	}								
-	static void update(int[][][]f, int[][][]f_n) 						//обновляем популяцию
-	{
-		int i, j, k;
-		for(i = 0; i < psize; i++)
-			for(j = 0; j < 4; j++)
-				for(k = 0; k < size; k++)
-					f[i][j][k] = f_n[i][j][k];
-	}									
+										
 
 	
 	/////////////////////////////////////////////////////
 	
 	public static int main(String[] args) 
 	{
-	int i;
-	double[] fitness;
-	int[][] best;
-	int[][][] f;
-	int[][][] f_new;
-	int best_num;
-	Random rand = new Random();
-	int x1 = 0, y1 = 0, x2 = 0, y2 = 0;
-
-	size = HEAD_SIZE * MAX_ARN + 1;
 	
-	best = new int[4];
-	fitness = new double (psize);
-	f = new int(psize);
-	f_n = (int ***)malloc(sizeof(int**)*psize);
-	init(best, fitness, f, f_new);
-	try 
-    {
-        File file = new File("logger.txt");
-        boolean success = file.createNewFile();
-    
-	
-        BufferedWriter out = new BufferedWriter(new FileWriter("logger.txt"));
-        
-	}
-    catch (IOException e)    { System.out.println("файл log.txt не открывается\n"); }     
-    
-   
-	
-//////////////////// НУЛЕВОЕ ПОКОЛЕНИЕ  ///////////////////////////////////////////////////////////////////////////////////////
-	
-	//out.write(loger, "--------------------------------------------------ПОКОЛЕНИЕ %d-------------------------------------------------------------\n",generation);
-	
-	for(i = 0; i < psize; i++){//по всем особям поколения
-		System.out.println( "Особь #%d:");
-		System.out.println(i+1);
+	int x1 = 0, y1 = 0, x2 = 0, y2 = 0;	
+	Helper.Init();	///создание нулевого поколения
+	 	///проверка условия завершения
+		//турнир
+		//разбока
+		//селекция и мутация
 		
-		build_person(f[i]); //сгенерировать особь нулевого поколения
-		write_person(f[i]); //записать ее в файл
-		
+	
+	
 		if(POSITIONS){
 			x1 =25 + rand.nextInt(750);
 			x2 = 25 + rand.nextInt(750);
@@ -350,7 +320,7 @@ public Chromosome[] doubleCrossover(  Chromosome chromosome  ){
 		
 			generate_battle(x1, y1, x2, y2);
 			
-			Runtime.getRuntime().exec("cmd /c robocode.bat")
+			Runtime.getRuntime().exec("cmd /c robocode.bat");
 			
 		}	
 		
@@ -396,14 +366,12 @@ public Chromosome[] doubleCrossover(  Chromosome chromosome  ){
 		
 				generate_battle(x1, y1, x2, y2);
 			
-				//out.close();
-				Runtime.getRuntime().exec("cmd /c robocode.bat") //запустить просчет
+				Runtime.getRuntime().exec("cmd /c robocode.bat"); //запустить просчет
 				
 			}	
 		
 			generate_battle(x2, y2, x1, y1);
 		
-			//out.close();
 			Runtime.getRuntime().exec("cmd /c robocode.bat"); //запустить просчет
 					
 			fitness[i] = results_scan(); //и посмотреть что вышло
@@ -427,11 +395,11 @@ public Chromosome[] doubleCrossover(  Chromosome chromosome  ){
 	
 	
 
-class Helper{
+static class Helper{
 	  		
 	public static int AVERAGE_ENOUGH=80; 
 	public static int MAX_ENOUGH=90;
-	public static int POPULATION_COUNT = 5;
+	public static int POPULATION_COUNT = 8;
 	public static double max_fitness = 0;
 	public static double average_fitness = 0;
 	public static float MUTATION_LIKELIHOOD= 5.0F;
@@ -441,18 +409,20 @@ class Helper{
 	public static int MAX_ARN=4; 		//максимальная арность базовой функции - 4 (у if)
 	public static int GENES_COUNT = 50;
 	private Chromosome population[]=new Chromosome[Helper.POPULATION_COUNT];
-	
-	public int getRandomInt( int min, int max ){
+	private Chromosome population[]=new Chromosome[Helper.POPULATION_COUNT];
+	private Chromosome population[]=new Chromosome[Helper.POPULATION_COUNT];
+	private Chromosome population[]=new Chromosome[Helper.POPULATION_COUNT];
+	public static int getRandomInt( int min, int max ){
 		Random random;
 		random = new Random();
 		return  random.nextInt( max+1 ) + min ;
 	}
 	
-	public float getRandomFloat( float min, float max ){
+	public static float getRandomFloat( float min, float max ){
 		return  (float) (Math.random()*max + min) ;
 	}
 	
-	public  int getRandomGene(){
+	public static  int getRandomGene(){
 		return getRandomInt( GENE_MIN , GENE_MAX);
 	}
 	
@@ -468,12 +438,50 @@ class Helper{
 		}		
 				
 	}
+	private void addList(Specimen specimen)///добавление особей в список
+	{
+		//////////////////////////////////////////
+	}
 	
+	private static void Init() {
+		Specimen specimen;
+		createPopulation();
+		for(int i=0;i<POPULATION_COUNT;i++)
+			for(int j=0;j<POPULATION_COUNT;j++)
+				for(int k=0;k<POPULATION_COUNT;k++)
+					for(int z=0;z<POPULATION_COUNT;z++)
+					{
+						specimen.setIndiv(0,Helper.getPop()[i];
+						specimen.setIndiv(1,Helper.getPop()[j];
+						specimen.setIndiv(2,Helper.getPop()[k];
+						specimen.setIndiv(3,Helper.getPop()[z];
+					}
+		write(speciment);////////////////////реализовать
+		generate_battle(int x1,int y1,int x2,int y2);
+		Runtime.getRuntime().exec("cmd /c robocode.bat");
+		addList(specimen);
+  }
 
-  }		
+	}
+	class Specimen{										//служит для объединения хромомом в одной особи
+		public float fitness;
+		public int indiv[][]= new int[4][30];
+		public float getFitness() {
+			return this.fitness;
+		}
+		public void setFitness(float fitness) {
+			this.fitness = fitness;
+		}
+		public int[] getIndiv(int i) {
+			return indiv[i];
+		}
+		public void setIndiv(int i,int[] indiv) {
+			this.indiv[i] = indiv;
+		}
+	}	
 }	
 	
-	
+}	
 
 
 
