@@ -1,90 +1,95 @@
-package voidious.predator;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 
 import robocode.*;
-import robocode.util.Utils;
-import java.awt.geom.*;
-import java.util.LinkedList;
-import java.awt.Color;
-import robocode.Rules;
-
-
 public class Predator extends AdvancedRobot {
-    private static double _surfStats[][][] = new double[4][5][47];
-    public static Point2D.Double _myLocation;
-    public static Point2D.Double _enemyLocation;
-    public static LinkedList _enemyWaves;
-    private static double _oppEnergy;
+	
+	
+	
+	static class Tree {
+		  static class Node {
+			  int value;
+			  Node left;
+			  Node right;
+		    public Node(int value) {
+		      this.value = value;
+		    }
+		  }
 
-    private static Wave _surfWave;
-    private static Wave _nextSurfWave;
-    private static double _lastDistance;
+		  public void insert(Node node, int value) {	//чем меньше число, тем выше приоритет операции
+		    if (value < node.value) {
+		      if (node.left != null) {
+		        insert(node.left, value);
+		        
+		      } else {
+		        node.left = new Node(value);
+		      }
+		    } else if (value > node.value) {
+		      if (node.right != null) {
+		        insert(node.right, value);
+		      } else {
+		        node.right = new Node(value);
+		      }
+		    }
+		  }
+
+		  public void assembly_fun(Node node) {
+		    if (node != null) {
+		    	assembly_fun(node.left);
+		      	assembly_fun(node.right);
+		    }
+		  }
+	}
+	
+	private double ShotAngle; 
+    private double ShotEnergy;
+    private double MoveAngle;
+    private double MoveDistance; 
     
-    private static double _goAngle;
-    private static int _ramCounter;
-    
-    private static java.awt.geom.Rectangle2D.Double _fieldRect
-        = new java.awt.geom.Rectangle2D.Double(18, 18, 764, 564);
-    static final double A_LITTLE_LESS_THAN_HALF_PI = 1.25;
-    static final double WALL_STICK = 140;
-
-    static final int GF_ZERO = 23;
-    static final int GF_ONE = 46;
-    private static double _enemyAbsoluteBearing;
-    private static int _lastGunOrientation;
-    
-
-    static double lastVChangeTime;
-    static int enemyVelocity;
-    static double[][][][][][] _gunStats = new double[6][4][4][2][3][GF_ONE+1];
-    static final double LOG_BASE_E_TO_2_CONVERSION_CONSTANT = 1.4427;
-
     public void run() {
-        setColors(Color.black, Color.black, Color.white);
+    	static int len=30;
+    	static int[] fun_shotangle= new int[len];
+    	static int[] fun_moveangle = new int[len];
+    	static int[] fun_shotenergy = new int[len];
+    	static int[] fun_movedistance = new int[len];
+		    try {
+		    	//открываем хромоомы
+		        BufferedReader read = new BufferedReader(new FileReader(getDataFile("chromosome.bs")));
 
-        _enemyWaves = new LinkedList();
-        setAdjustGunForRobotTurn(true);
-        setAdjustRadarForGunTurn(true);
+				//считываем четыре строки
+				String[] str1 = read.readLine().split(" ");
+				String[] str2 = read.readLine().split(" ");
+				String[] str3 = read.readLine().split(" ");
+				String[] str4 = read.readLine().split(" ");
+			
+				for(int i = 0; i < len; i++){						//конвертируем в массив чисел
+					fun_shotangle[i] = Integer.parseInt(str1[i]);
+					fun_moveangle[i] = Integer.parseInt(str2[i]);
+					fun_shotenergy[i] = Integer.parseInt(str3[i]);
+					fun_movedistance[i] = Integer.parseInt(str4[i]);
+				}
 
-        do {
-            turnRadarRightRadians(1);
-        } while (true);
+		    } catch (IOException exc) {
+		    	
+		    }
+		    
+		    } catch (NumberFormatException exc) {
+		    	
+				
+			}			
+			
+			
+					
+	}
+		while(true) {
+			
 
-    }
+			setTurnRadarRightRadians(2*Math.PI);
+		
 
-    public void onScannedRobot(ScannedRobotEvent e) {
-        Wave w;
-        int direction;
-
-        double bulletPower;
-        if ((bulletPower = _oppEnergy - e.getEnergy()) <= 3
-            && bulletPower > 0) {
-        	(w = _nextSurfWave).bulletSpeed = Rules.getBulletSpeed(bulletPower);
-            addCustomEvent(w);
-            _enemyWaves.addLast(w);
+			
+		
         }
-        (_nextSurfWave = w = new Wave()).directAngle = _lastAbsBearingRadians;
-        w.waveGuessFactors = _surfStats[(int)(Math.min((_lastDistance+50)/200, 3))][(int)((Math.abs(_lastLatVel)+1)/2)];
-        w.orientation = direction = sign(_lastLatVel);
-        double enemyAbsoluteBearing;
-        w.sourceLocation = _enemyLocation = 
-        	project((_myLocation = new Point2D.Double(getX(), getY())),
-        			_enemyAbsoluteBearing = enemyAbsoluteBearing = getHeadingRadians() + e.getBearingRadians(), _lastDistance = e.getDistance());
-    
-        try {
-            _goAngle = (_surfWave = (Wave)(_enemyWaves.getFirst()))
-            	.absoluteBearing(_myLocation) +
-            	A_LITTLE_LESS_THAN_HALF_PI * 
-                	(direction = (sign(checkDanger(-1) - checkDanger(1))));
-        } catch (Exception ex) { }
-
-       
-    public void onHitByBullet(HitByBulletEvent e) {
-        Wave surfWave = Predator._surfWave;
-        _oppEnergy += e.getBullet().getPower() * 3;
-    	if (surfWave.distanceToPoint(_myLocation) - surfWave.distance < 100) {
-            logHit(surfWave, _myLocation, 0.7);
-        }
-    }
-
     }
 }
