@@ -3,9 +3,10 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
+//import java.io.InputStream;
 import java.io.InputStreamReader;
 //import java.util.Collections;
 import java.util.Random;
@@ -81,13 +82,13 @@ public void doubleCrossover(  Chromosome chromosome  ){
 		BufferedWriter out;
 		try 
 	    {  	    
-		out = new BufferedWriter(new FileWriter("C:\\robocode\\battles\\bat.battle"));
+		out = new BufferedWriter(new FileWriter("battles/bat.battle"));
 		out.write("robocode.battleField.width=800\n");
 		out.write("robocode.battleField.height=600\n");
-		out.write("robocode.battle.numRounds=5\n");
+		out.write("robocode.battle.numRounds=3\n");
 		out.write("robocode.battle.gunCoolingRate=0.1\n");
 		out.write("robocode.battle.rules.inactivityTime=450\n");																			
-		out.write("robocode.battle.selectedRobots=EMK.Predator*,voidious.Diamond\n");
+		out.write("robocode.battle.selectedRobots=EMK.Predator*,sample.Walls\n");//Dlink.Annarobot*
 		System.out.println("Записали battle\n");
 		out.close();
 	    }
@@ -106,14 +107,17 @@ public void doubleCrossover(  Chromosome chromosome  ){
 	public static void main(String[] args) 
 	{
 	
-	//int generation=0;
 	int max_fitness=0;
 	Specimen specimen,best;
 	specimen= new Specimen();
 	best= new Specimen();
-	Helper.Init();					//создание нулевого поколения
+	Helper.iniPopulation();
+	if(!Helper.scanGen()){
+		Helper.Init();					//создание нулевого поколения
+	}	
 	System.out.println("ПОКОЛЕНИЕ инициаллизировано ");
 	Helper.selection();			//турнир
+	best=Helper.find_max_fitness(Helper.Hlist); //находим лучшую особь
 	System.out.println("Селекция ");
 	System.out.println("Размер "+ Helper.Hlist.size());
 	Helper.destroy();				//разбока
@@ -131,6 +135,7 @@ public void doubleCrossover(  Chromosome chromosome  ){
 			for(int j=0;j<Helper.POPULATION_COUNT;j++)
 				for(int k=0;k<Helper.POPULATION_COUNT;k++)
 					for(int z=0;z<Helper.POPULATION_COUNT;z++){
+						specimen= new Specimen();
 						specimen.setIndiv(0,Helper.getShotAngle(i));
 						specimen.setIndiv(1,Helper.getMoveAngle(j));
 						specimen.setIndiv(2,Helper.getShotEnergy(k));
@@ -140,14 +145,17 @@ public void doubleCrossover(  Chromosome chromosome  ){
 						
 								//Runtime.getRuntime().exec("cmd /c start c:/robocode/robo.bat");	//запуск робокода для теста робота
 								//Runtime.getRuntime().exec("cmd /c  c:/robocode/robo.bat");
-							runProgramAndWait();
-							
+							runProgramAndWait();	
 						specimen.scan_result();								//узнаем значение приспособленности
 						Helper.Hlist.add(specimen); 						//добавление особи в файл
-					}	
-		Helper.selection();			//турнир
+					}
+		for(int f=0;f<Helper.Hlist.size();f++)
+			System.out.println("итого:"+Helper.Hlist.get(f).getFitness());
+		//Helper.Hlist.add(best);	//выбираем особь с лучшей приспособленностью с предыдущего поколения и добавляем в новое чтобы гены не затерялись  
 		max_fitness=Helper.maxfitness();//нужно узнать лучшую и среднию приспособленность на данный момент
-		best=Helper.find_max_fitness(Helper.Hlist);
+		best=Helper.find_max_fitness(Helper.Hlist); //находим лучшую особь
+		Helper.selection();			//турнир
+		
 		Helper.destroy();				//разбока
 		Helper.crossandmut();
 		System.out.println("ПОКОЛЕНИЕ " + (++generation));
@@ -164,17 +172,16 @@ public void doubleCrossover(  Chromosome chromosome  ){
 static class Helper{
 	  		
 	public static int AVERAGE_ENOUGH=80; 
-	public static int MAX_ENOUGH=80;
-	static int MAX_COUNT=4;	
-	public static int POPULATION_COUNT = 6 ;
+	public static int MAX_ENOUGH=90;
+	static int MAX_COUNT=2;	
+	public static int POPULATION_COUNT = 2 ;
 	public static double max_fitness = 0;
 	public static double average_fitness = 0;
 	public static float MUTATION_LIKELIHOOD= 20.0F;
 	public static int GENE_MIN = 0; 
 	public static int GENE_MAX = 29;
-	public static int HEAD_SIZE=10;	//размер головы строки 
-	public static int MAX_ARN=4; 		//максимальная арность базовой функции - 4 (у if)
 	public static int GENES_COUNT = 30;
+	public static int CountSpec=16;
 	public static ArrayList<Specimen> Hlist = new ArrayList<Specimen>();
 	public static ArrayList<Specimen> Tmplist = new ArrayList<Specimen>();
 	public static ArrayList<Specimen> Nlist = new ArrayList<Specimen>();
@@ -221,6 +228,20 @@ static class Helper{
 		return  random.nextInt( max+1 ) + min ;
 	}
 	
+	/*public static void permutation()			//помещает особь с лучшей приспособленностью в конец, её мы не мутируем
+	{	Specimen tmp;
+		int max=0;
+		int j=0;
+		for(int i=0;i<Hlist.size();i++)
+			if(Hlist.get(i).getFitness()>max){
+				max=Hlist.get(i).fitness;
+				j=i;
+			}
+		tmp=Hlist.get(Hlist.size()-1);
+		Hlist.set(Hlist.size()-1,Hlist.get(j));
+		Hlist.set(j, tmp);
+	}*/
+	
 	public static float getRandomFloat( float min, float max ){
 		return  (float) (Math.random()*max + min) ;
 	}
@@ -247,7 +268,15 @@ static class Helper{
 		}		
 				
 	}
-	
+	private static void  iniPopulation(){		//создание популяциии 0-го поколения
+		for (int i = 0; i<POPULATION_COUNT;++i){
+			popShotAngle[i]=new Chromosome();
+			popMoveAngle[i]=new Chromosome();
+			popShotEnergy[i]=new Chromosome();
+			popMoveDistance[i]=new Chromosome();
+		}		
+				
+	}
 	
 	public static void Init() 
 	{
@@ -257,6 +286,7 @@ static class Helper{
 			for(int j=0;j<POPULATION_COUNT;j++)
 				for(int k=0;k<POPULATION_COUNT;k++)
 					for(int z=0;z<POPULATION_COUNT;z++){
+						specimen =new Specimen();
 						specimen.setIndiv(0,Helper.getShotAngle(i));
 						specimen.setIndiv(1,Helper.getMoveAngle(j));
 						specimen.setIndiv(2,Helper.getShotEnergy(k));
@@ -267,7 +297,6 @@ static class Helper{
 							 //Runtime.getRuntime().exec("cmd /c start c:/robocode/robo.bat");
 							//Runtime.getRuntime().exec("cmd /c server.bat", null, new File(" c:/robocode/robo.bat"));
 							runProgramAndWait();
-
 						specimen.scan_result();//узнаем значение приспособленности
 						Hlist.add(specimen);
 					}
@@ -276,19 +305,36 @@ static class Helper{
 	
 	static void selection() 		// используем турнирный метод селекции сначала делим все особи на пары по 5 выбираем лучшую.
 	{	int k=0;
+		int i;
 		int j=POPULATION_COUNT-1;
 		System.out.println("Размер "+ Helper.Hlist.size());
 		while(k<3)
-		{
-			for(int i=0;i<Hlist.size();i+=POPULATION_COUNT){	
-				while(j>=0){
-					Tmplist.add(Hlist.get(i+j));
-					j--;
+		{	/*if(k==0){
+				for(i=0;i<(Hlist.size()-(POPULATION_COUNT+1));i+=POPULATION_COUNT){	
+					while(j>=0){
+						Tmplist.add(Hlist.get(i+j));
+						j--;
+					}
+					Nlist.add(find_max_fitness(Tmplist));
+					Tmplist.clear();
+					j=POPULATION_COUNT-1;
 				}
-				Nlist.add(find_max_fitness(Tmplist));
-				Tmplist.clear();
-				j=POPULATION_COUNT-1;
-			}
+				for(i=(Hlist.size()-(POPULATION_COUNT+1));i<Hlist.size();i++)	
+						Tmplist.add(Hlist.get(i));
+					Nlist.add(find_max_fitness(Tmplist));
+					Tmplist.clear();
+			}else{*/
+				
+				for(i=0;i<Hlist.size();i+=POPULATION_COUNT){	
+					while(j>=0){
+						Tmplist.add(Hlist.get(i+j));
+						j--;
+					}
+					Nlist.add(find_max_fitness(Tmplist));
+					Tmplist.clear();
+					j=POPULATION_COUNT-1;		
+				}
+			//}	
 			Hlist.clear();
 			for(int l=0;l<Nlist.size();l++)
 			Hlist.add(Nlist.get(l));
@@ -301,11 +347,12 @@ static class Helper{
 	static Specimen find_max_fitness(ArrayList<Specimen> list) //возвращает особь с самой большой приспособленностью
 	{	int max=0;
 		int j=0;
-		for(int i=0;i<list.size();i++)
+		for(int i=0;i<list.size();i++){
 			if(list.get(i).getFitness()>max){
-				max=list.get(i).fitness;
+				max=list.get(i).getFitness();
 				j=i;
 			}
+		}	
 		return list.get(j);		
 	}
 	
@@ -321,18 +368,16 @@ static class Helper{
 	static void crossandmut(){										//скрещиваем хромосомы попарно и мутируем их
 		for(int i=0;i<POPULATION_COUNT-1;i++){
 			popShotAngle[i].doubleCrossover(popShotAngle[i+1]);
-			popShotAngle[i].mutation();
-			popShotAngle[i+1].mutation();
 			popMoveAngle[i].doubleCrossover(popMoveAngle[i+1]);
-			popMoveAngle[i].mutation();
-			popMoveAngle[i+1].mutation();
 			popShotEnergy[i].doubleCrossover(popShotEnergy[i+1]);
-			popShotEnergy[i].mutation();
-			popShotEnergy[i+1].mutation();
 			popMoveDistance[i].doubleCrossover(popMoveDistance[i+1]);
-			popMoveDistance[i].mutation();
-			popMoveDistance[i+1].mutation();
 			i++;
+		}
+		for(int i=0;i<POPULATION_COUNT;i++){
+			popShotAngle[i].mutation();
+			popMoveAngle[i].mutation();
+			popShotEnergy[i].mutation();
+			popMoveDistance[i].mutation();
 		}	
 	}
 		static int maxfitness(){
@@ -340,18 +385,115 @@ static class Helper{
 			int j=0;
 			for(int i=0;i<Hlist.size();i++){
 				if((Hlist.get(i).getFitness())>max){
-					max=Hlist.get(i).fitness;
+					max=Hlist.get(i).getFitness();
 					j=i;
 				}	
-			}	
+			}
+			
 			return Hlist.get(j).getFitness();
 			}
 		
-		}	
+		static boolean scanGen(){
+			Specimen specimen ;
+			String[] bufer = new String[120];
+			String[] str1 = new String[GENES_COUNT] ;
+			String[] str2 = new String[GENES_COUNT] ;
+			String[] str3 = new String[GENES_COUNT] ;
+			String[] str4 = new String[GENES_COUNT];
+			int[] in1=new int[GENES_COUNT];
+			int[] in2=new int[GENES_COUNT];
+			int[] in3=new int[GENES_COUNT];
+			int[] in4=new int[GENES_COUNT];
+			String line;
+			try {
+		    	//открываем хромосомы
+				File file = new File("EMK/base/best.bs");
+				if(file.length()==0){
+					return false;
+				}	
+				FileReader r=new FileReader(file);
+		       // BufferedReader read = new BufferedReader(new FileReader("C:\\Users\\Admin.Admin-ПК\\workspace\\Predator\\bin\\EMK\\base\\best.bs"));
+				BufferedReader read = new BufferedReader(r);
+				//read.mark((int) file.length());
+				
+				
+					line=read.readLine();//.split(" ");
+					while(line!= null){
+						//
+						bufer=line.split(" ");
+			       // if((bufer=read.readLine().split(" "))==null ){
+			        //	return false;
+			       // }	
+			       // String[] bufer=read.readLine().split(" ");//считываем строку с 4 свойствами
+			        
+			        int j=0;
+			        
+			        for(int i = 0; i < GENES_COUNT; i++){
+			        	str1[j]=bufer[i];
+			        	j++;
+			        }
+			        j=0;
+			        for(int i = GENES_COUNT; i < GENES_COUNT*2; i++){
+			        	str2[j]=bufer[i];
+			        	j++;
+			        }
+			        j=0;
+			        for(int i = GENES_COUNT*2; i < GENES_COUNT*3; i++){
+			        	str3[j]=bufer[i];
+			        	j++;
+			        }
+			        j=0;
+			        for(int i = GENES_COUNT*3; i < GENES_COUNT*4; i++){
+			        	str4[j]=bufer[i];
+			        	j++;
+			        }
+					//System.out.println(str1);
+					for(int i = 0; i < GENES_COUNT; i++){						//конвертируем в массив чисел
+						in1[i] = Integer.parseInt(str1[i]);
+						in2[i] = Integer.parseInt(str2[i]);
+						in3[i] = Integer.parseInt(str3[i]);
+						in4[i] = Integer.parseInt(str4[i]);
+					}
+						specimen=new Specimen();
+						specimen.setIndiv(0, in1) ;
+						specimen.setIndiv(1, in2) ;
+						specimen.setIndiv(2, in3) ;
+						specimen.setIndiv(3, in4) ;
+					Helper.Hlist.add(specimen);
+					//bufer=read.readLine().split(" ");
+					line=read.readLine();
+					}
+				if(Helper.Hlist.size()!=CountSpec){
+					int count=Helper.Hlist.size();
+					for(int z = count ;z<(CountSpec);z+=count)
+						for(int k=0;k<count;k++)
+							Helper.Hlist.add(Helper.Hlist.get(k));
+				}
+					
+				//}while(Helper.Hlist.size()!=CountSpec);		
+		        read.close();
+			} 
+		    catch (IOException exc) {
+		    	System.out.println("Ошибка считывания");
+		    	return false;
+		    }
+		    catch (NumberFormatException exc) {
+		    	
+		    	System.out.println("Ошибка! Считано не число");
+		    	return false;
+			}
+		
+			/*for(int c=0;c<CountSpec;c++){
+				Helper.Hlist.add(specimen);
+			}*/
+			return true;
+		}
+	}
+
 	 static boolean runProgramAndWait(){
 		Process process;
 		
-		String[] command = { "cmd", "/C", "Start/Wait", "c:/robocode/robo.bat" };
+		String[] command = { "cmd", "/C", "Start/Wait", "robo.bat" };//system.hostname!!!
 		java.lang.Runtime runtime;
 	
 		try{
@@ -390,14 +532,13 @@ static class Helper{
 			BufferedWriter out;
 			try 
 			{	
-				out = new BufferedWriter(new FileWriter("C:\\Users\\Admin.Admin-ПК\\workspace\\Predator\\bin\\EMK\\base\\chromos.bs"));
+				out = new BufferedWriter(new FileWriter("EMK/base/best.bs"));
 				for(i = 0; i < 4; i++){
 					for(j = 0; j < 30; j++){
 						out.write((indiv[i][j])+" " );
 					}
-					out.newLine();
+					//out.newLine();
 				}
-				//out.newLine();
 				//out.write(this.fitness);
 				System.out.println("записали особь\n"); 
 				out.close();
@@ -415,7 +556,7 @@ static class Helper{
 			BufferedReader br;
 			try
 		    {
-				fs= new FileInputStream("C:\\robocode\\results.txt"); 
+				fs= new FileInputStream("results.txt"); 
 				br = new BufferedReader(new InputStreamReader(fs));
 				for(i = 0; i < 2;i++) 
 					br.readLine();

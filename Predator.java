@@ -4,8 +4,13 @@ import java.io.FileReader;
 import java.io.IOException;
 import robocode.*;
 import robocode.util.Utils;
+import java.awt.Color;
 public class Predator extends AdvancedRobot {
 	private double x, y, ahead, angl, wall, dh, a, GH, vekt, dist, e, E;
+	private static EnemyBot enemy = new EnemyBot();
+	private byte moveDirection = 1;
+	private int tooCloseToWall = 0;
+	private int wallMargin = 60;
 	static class Event{
 	    double x, y, ahead, angl, wall, dh, a, GH, vekt, dist, e, E;
 		Event(double x, double y, double ahead, double angl, double wall, double dh, double a, double GH, double vekt, double dist, double e, double E) {
@@ -67,7 +72,7 @@ public class Predator extends AdvancedRobot {
 				case 2:
 					return ((assembly_fun(node.left))+(assembly_fun(node.right)));
 				case 3:
-					return ((assembly_fun(node.left))+(assembly_fun(node.right)));
+					return ((assembly_fun(node.left))-(assembly_fun(node.right)));
 				case 4:
 					return (Math.sqrt(assembly_fun(node.left)));							//корень
 				case 5:
@@ -79,7 +84,7 @@ public class Predator extends AdvancedRobot {
 				case 8:
 					return (Math.max(assembly_fun(node.left),assembly_fun(node.right)));	//максимальное из двух	
 				case 9:
-					return (Math.atan(assembly_fun(node.left)));							//значение тангенса в радианах
+					return (Math.atan(assembly_fun(node.left))*(assembly_fun(node.right)));							//значение тангенса в радианах
 				case 10:
 					return (Math.exp(assembly_fun(node.left)));
 			}
@@ -111,9 +116,9 @@ public class Predator extends AdvancedRobot {
 				case 23:
 					return Math.PI;
 				case 24:
-					return -0.5 ;
+					return enemy.getDistance() ;
 				case 25:
-					return -1 ;
+					return enemy.getBearing() ;
 				case 26:
 					return 0.5;
 				case 27:
@@ -121,7 +126,7 @@ public class Predator extends AdvancedRobot {
 				case 28:
 					return 2;
 				case 29:
-					return 0;
+					return 10;
 			}	
 								
 		}
@@ -144,21 +149,49 @@ public class Predator extends AdvancedRobot {
     public static	Event event;
     
     public void run() {
-    	
+    	setColors(Color.red, Color.magenta, Color.black);
     	int len=30;
+		setAdjustRadarForGunTurn(true);
+		setAdjustGunForRobotTurn(true);
+		enemy.reset();
+		addCustomEvent(new Condition("too_close_to_walls") {
+			public boolean test() {
+				return ((getX() <= wallMargin || getX() >= getBattleFieldWidth() - wallMargin || getY() <= wallMargin || getY() >= getBattleFieldHeight() - wallMargin));
+			}
+		});
     	int[] fun_shotangle= new int[len];
     	int[] fun_moveangle = new int[len];
     	int[] fun_shotenergy = new int[len];
     	int[] fun_movedistance = new int[len];
 		    try {
 		    	//открываем хромосомы
-		        BufferedReader read = new BufferedReader(new FileReader("C:\\Users\\Admin.Admin-ПК\\workspace\\Predator\\bin\\EMK\\base\\chromos.bs"));
-
+		        BufferedReader read = new BufferedReader(new FileReader("/bin/EMK/base/best.bs"));
+		        String[] bufer=read.readLine().split(" ");//считываем строку с 4 свойствами
+		        int j=0;
 				//считываем четыре строки
-				String[] str1 = read.readLine().split(" ");
-				String[] str2 = read.readLine().split(" ");
-				String[] str3 = read.readLine().split(" ");
-				String[] str4 = read.readLine().split(" ");
+		        String[] str1 = new String[30] ;
+				String[] str2 = new String[30] ;
+				String[] str3 = new String[30] ;
+				String[] str4 = new String[30];
+		        for(int i = 0; i < len; i++){
+		        	str1[i]=bufer[j];
+		        	j++;
+		        }
+		        j=0;
+		        for(int i = len; i < len*2; i++){
+		        	str2[j]=bufer[i];
+		        	j++;
+		        }
+		        j=0;
+		        for(int i = len*2; i < len*3; i++){
+		        	str3[j]=bufer[i];
+		        	j++;
+		        }
+		        j=0;
+		        for(int i = len*3; i < len*4; i++){
+		        	str4[j]=bufer[i];
+		        	j++;
+		        }
 				System.out.println(str1);
 				for(int i = 0; i < len; i++){						//конвертируем в массив чисел
 					fun_shotangle[i] = Integer.parseInt(str1[i]);
@@ -195,11 +228,19 @@ public class Predator extends AdvancedRobot {
 			wall = Wall_dist();
 			GH = getGunHeadingRadians();
             E = getEnergy();
-
+			
+			if (tooCloseToWall > 0) 
+				tooCloseToWall--;
+			if (getVelocity() == 0) {		//переключение направления, отойти от стены
+				setMaxVelocity(8);
+				moveDirection *= -1;
+				setAhead(10000 * moveDirection);
+			}
+			
 			event=new Event(x, y, ahead, angl, wall, dh, a, GH, vekt, dist, e, E);
 			
 			ShotAngle = Tree.assembly_fun(tree_sa);
-			ShotEnergy = Tree.assembly_fun(tree_ma);
+			ShotEnergy =Math.abs(Tree.assembly_fun(tree_ma));
 			MoveAngle = Tree.assembly_fun(tree_se);
 			MoveDistance = Tree.assembly_fun(tree_md);
 			setTurnGunRightRadians(ShotAngle);
@@ -218,7 +259,11 @@ public class Predator extends AdvancedRobot {
 	private double Wall_dist() {
         return Math.min(Math.min( getX(),getBattleFieldWidth() - getX()),Math.min(getY(),getBattleFieldHeight() - getY()));
     }
-	public void onScannedRobot(ScannedRobotEvent event) {	
+	public void onScannedRobot(ScannedRobotEvent event) {
+				if (enemy.none() ||	event.getDistance() < enemy.getDistance() - 70 || event.getName().equals(enemy.getName())){
+					enemy.update(event);
+					setTurnRight(event.getBearing());
+				}
 				a = Utils.normalRelativeAngle(getHeadingRadians() + event.getBearingRadians());
 				e = event.getEnergy();
 		        dist = event.getDistance();
@@ -227,10 +272,100 @@ public class Predator extends AdvancedRobot {
 		        vekt = event.getHeadingRadians();
 		       	dh=-Utils.normalRelativeAngle(getGunHeadingRadians()-a);
 
-		    }
+	}
+	
+	public void onRobotDeath(RobotDeathEvent e) {
+		if (e.getName().equals(enemy.getName())) {
+			enemy.reset();
+		}
+	}
 
-		    public void onHitByWall(HitByBulletEvent e) {
-		        turnLeft(180);
-		    }
+	public void onCustomEvent(CustomEvent e) {
+		if (e.getCondition().getName().equals("too_close_to_walls"))
+		{
+			if (tooCloseToWall <= 0) {
+				tooCloseToWall += wallMargin;
+				setMaxVelocity(0); // стоп
+			}
+		}
+	}
+	public void onHitByWall(HitByBulletEvent e) {
+	    turnLeft(180);
+	}
+	
+	public void onHitRobot(HitRobotEvent e) { tooCloseToWall = 0; }
+	
+	
+	
+	
+	
+	
+	
+	static class EnemyBot extends Robot {	//класс для хранения информации о враге
+		  private double bearing = 0;
+		  private double distance = 0;
+		  private double energy = 0;
+		  private double heading = 0;
+		  private String name = null;
+		  private double velocity = 0;
+		  
+		  public EnemyBot() {
+		      reset();
+		  }
+		  
+		  public double getBearing() {
+		    return bearing;
+		  }
+		 
+		  public double getDistance() {
+		      return distance;
+		  }
+		 
+		  public double getEnergy() {
+		      return energy;
+		  }
+
+		  public double getHeading() {
+		      return heading;
+		  }
+
+		  public String getName() {
+		      return name;
+		  }
+		 
+		  public double getVelocity() {
+		      return velocity;
+		  }
+
+		  public void update(ScannedRobotEvent e) {
+		    bearing = e.getBearing();
+		    distance = e.getDistance();
+		    energy = e.getEnergy();
+		    heading = e.getHeading();
+		    name = e.getName();
+		    velocity = e.getVelocity();
+		  }
+
+		  public void reset() {
+		    bearing = 0;
+		    distance = 0;
+		    energy = 0;
+		    heading = 0;
+		    name = "";
+		    velocity = 0;
+		  }
+		  
+		  public boolean none() {
+		    return true;
+		  }
+		}
+	
+	
+	
+	
+	
+	
+	
+	
 	
 }	
